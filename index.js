@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 
 app.post('/webhook', async (req, res) => {
-  const { email, nome, telefone } = req.body;
+  const { email, nome, telefone } = req.body.user_data;
 
   const payload = {
     event_name: 'Purchase',
