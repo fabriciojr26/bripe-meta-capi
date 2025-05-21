@@ -42,7 +42,7 @@ app.post('/webhook', async (req, res) => {
 
 function hash(str) {
   const crypto = require('crypto');
-  return crypto.createHash('sha256').update(str.trim().toLowerCase()).digest('hex');
+  return crypto.createHash('sha256').update((str || '').trim().toLowerCase()).digest('hex');
 }
 
 app.listen(PORT, () => {
