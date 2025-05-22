@@ -1,84 +1,78 @@
-const express = require('express');
-const axios = require('axios');
-const crypto = require('crypto');
-require('dotenv').config();
+// index.js - MAX Adaptado para postback Bripe
+const express = require("express");
+const axios = require("axios");
+const crypto = require("crypto");
+require("dotenv").config();
 
 const app = express();
 app.use(express.json());
 
-// Função de hash padronizada
-function hashSHA256(value) {
-  return crypto.createHash('sha256').update(value.trim().toLowerCase()).digest('hex');
+function hash(value) {
+  return crypto.createHash("sha256").update(value.trim().toLowerCase()).digest("hex");
 }
 
-app.post('/webhook', async (req, res) => {
+app.post("/webhook", async (req, res) => {
   try {
-    const {
-      email,
-      phone,
-      ip,
-      userAgent,
-      fbc,
-      fbp,
-      fn,
-      ln,
-      ge,
-      db,
-      ct,
-      st,
-      zp,
-      external_id,
-      value,
-      currency,
-      url
-    } = req.body;
+    const data = req.body;
 
-    const accessToken = process.env.META_TOKEN;
-    const pixelId = process.env.META_PIXEL_ID;
-    const apiUrl = `https://graph.facebook.com/v19.0/${pixelId}/events`;
+    // 1. Campos obrigatórios
+    const email = data.email || "";
+    const phone = data.phone || "";
+    const fn = data.first_name || "";
+    const ln = data.last_name || "";
+    const ct = data.city || "";
+    const st = data.state || "";
+    const zp = data.zip || "";
+    const external_id = data.external_id || data.transaction_id || "cliente_bripe";
+    const value = data.value || 0;
+    const currency = data.currency || "BRL";
 
-    const event = {
-      event_name: "Purchase",
-      event_time: Math.floor(Date.now() / 1000),
-      action_source: "website",
-      event_source_url: url || "https://bripe.com",
-      user_data: {
-        em: [hashSHA256(email)],
-        ph: [hashSHA256(phone)],
-        fn: fn ? [hashSHA256(fn)] : undefined,
-        ln: ln ? [hashSHA256(ln)] : undefined,
-        ge: ge ? [hashSHA256(ge)] : undefined,
-        db: db ? [hashSHA256(db)] : undefined,
-        ct: ct ? [hashSHA256(ct)] : undefined,
-        st: st ? [hashSHA256(st)] : undefined,
-        zp: zp ? [hashSHA256(zp)] : undefined,
-        external_id: external_id ? [hashSHA256(external_id)] : undefined,
-        client_ip_address: ip,
-        client_user_agent: userAgent,
-        fbc,
-        fbp
-      },
-      custom_data: {
-        value: parseFloat(value || 0),
-        currency: currency || "BRL"
-      }
+    // 2. Campos de rastreio (simulados)
+    const fbc = "fb.1." + Date.now() + ".BripeFBC";
+    const fbp = "fb.1." + Date.now() + ".BripeFBP";
+
+    // 3. Estrutura de evento para Meta
+    const payload = {
+      data: [
+        {
+          event_name: "Purchase",
+          event_time: Math.floor(Date.now() / 1000),
+          action_source: "website",
+          event_source_url: "https://pay.braip.co",
+          user_data: {
+            em: [hash(email)],
+            ph: [hash(phone)],
+            fn: [hash(fn)],
+            ln: [hash(ln)],
+            ct: [hash(ct)],
+            st: [hash(st)],
+            zp: [hash(zp)],
+            external_id: [hash(external_id)],
+            fbc: fbc,
+            fbp: fbp,
+          },
+          custom_data: {
+            currency: currency,
+            value: value,
+          },
+        },
+      ],
     };
 
-    
-    const payload = { data: [event] };
+    const pixelId = process.env.META_PIXEL_ID;
+    const accessToken = process.env.META_TOKEN;
 
-    const response = await axios.post(apiUrl, payload, {
-      params: { access_token: accessToken }
-    });
+    const url = `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`;
 
-    res.json({ success: true, meta: response.data });
-  } catch (error) {
-    console.error('Erro ao enviar evento:', error.response?.data || error.message);
-    res.status(500).json({ success: false, error: error.message });
+    const fbResponse = await axios.post(url, payload);
+
+    return res.status(200).json({ success: true, meta: fbResponse.data });
+  } catch (err) {
+    console.error("Erro no webhook:", err);
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Webhook CAPI ativo na porta ${PORT}`);
+app.listen(3000, () => {
+  console.log("Webhook CAPI ativo na porta 300");
 });
