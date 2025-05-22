@@ -18,8 +18,8 @@ app.post("/webhook", async (req, res) => {
   const lastName = nome.slice(1).join(" ") || "";
   const value = parseFloat(transaction?.valor || "0");
 
-  const accessToken = "SEU_TOKEN_META";
-  const pixelId = "SEU_PIXEL_ID";
+  const accessToken = process.env.ACCESS_TOKEN_META;
+  const pixelId = process.env.PIXEL_ID;
 
   const payload = {
     data: [
