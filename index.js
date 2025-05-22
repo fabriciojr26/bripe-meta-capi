@@ -73,6 +73,8 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log("Webhook CAPI ativo na porta 300");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Webhook CAPI ativo na porta ${PORT}`);
 });
+
